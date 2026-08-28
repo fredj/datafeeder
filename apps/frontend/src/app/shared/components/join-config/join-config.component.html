@@ -1,0 +1,95 @@
+<div class="flex flex-col gap-3">
+  <div class="flex flex-wrap gap-3">
+    <div class="flex flex-col">
+      <span class="text-lg font-medium text-gray-900 mb-2">
+        {{ 'import.join.table' | translate }}
+      </span>
+      <div class="w-48">
+        <gn-ui-dropdown-selector
+          [title]="''"
+          [showTitle]="false"
+          [choices]="tableChoices()"
+          [selected]="selectedTableId()"
+          (selectValue)="selectTable($any($event))"
+        ></gn-ui-dropdown-selector>
+      </div>
+    </div>
+
+    <div class="flex flex-col">
+      <span
+        class="text-lg font-medium mb-2"
+        [class.opacity-40]="!selectedTableId()"
+      >
+        {{ 'import.join.leftColumn' | translate }}
+      </span>
+      <div class="w-48">
+        <gn-ui-dropdown-selector
+          [title]="''"
+          [showTitle]="false"
+          [choices]="leftColumnChoices()"
+          [selected]="selectedLeftColumn()"
+          [disabled]="!selectedTableId()"
+          (selectValue)="selectLeftColumn($any($event))"
+        ></gn-ui-dropdown-selector>
+      </div>
+    </div>
+
+    <div class="flex flex-col">
+      <span
+        class="text-lg font-medium mb-2"
+        [class.opacity-40]="!selectedTableId()"
+      >
+        {{ 'import.join.rightColumn' | translate }}
+      </span>
+      <div class="w-48">
+        <gn-ui-dropdown-selector
+          [title]="''"
+          [showTitle]="false"
+          [choices]="rightColumnChoices()"
+          [selected]="selectedRightColumn()"
+          [disabled]="!selectedTableId()"
+          (selectValue)="selectRightColumn($any($event))"
+        ></gn-ui-dropdown-selector>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <span class="text-lg font-medium mb-2" [class.opacity-40]="!canAddColumn()">
+      {{ 'import.join.outputColumns' | translate }}
+    </span>
+
+    <div class="flex flex-col gap-2">
+      @for (col of joinColumns(); track col.column_name) {
+      <div class="w-48">
+        <gn-ui-dropdown-selector
+          [title]="''"
+          [showTitle]="false"
+          [choices]="rowChoices(col.column_name)"
+          [selected]="col.column_name"
+          (selectValue)="onRowColumnChange(col.column_name, $any($event))"
+        ></gn-ui-dropdown-selector>
+      </div>
+      }
+    </div>
+    <div class="flex items-end gap-2">
+      <div class="w-48">
+        <gn-ui-dropdown-selector
+          [title]="''"
+          [showTitle]="false"
+          [choices]="availableOutputColumns()"
+          [selected]="pendingColumn()"
+          [disabled]="!canAddColumn()"
+          (selectValue)="selectPendingColumn($any($event))"
+        ></gn-ui-dropdown-selector>
+      </div>
+      <gn-ui-button
+        type="secondary"
+        [disabled]="!canAddColumn() || !pendingColumn()"
+        (buttonClick)="confirmAddColumn()"
+      >
+        {{ 'import.join.addColumn' | translate }}
+      </gn-ui-button>
+    </div>
+  </div>
+</div>

@@ -16,6 +16,8 @@ import { NgIconComponent, provideIcons } from '@ng-icons/core'
 import { ActivatedRoute, Router } from '@angular/router'
 import {
   iconoirMap,
+  iconoirNavArrowDown,
+  iconoirNavArrowUp,
   iconoirTable,
   iconoirWarningTriangle,
   iconoirXmark
@@ -51,6 +53,7 @@ import type {
   ColumnConfig,
   TaskStatus,
   ForceProjection,
+  Join,
   StagingResponse,
   StagingMetadataResponse,
   StagingPreviewResponse
@@ -60,6 +63,7 @@ import { DataSourceSelectorComponent } from '../data-source-selector/data-source
 import { SettingsService } from '../../../core/settings/settings.service'
 import { DatasetTitleComponent } from '../dataset-title/dataset-title.component'
 import { DatasetConfigurationComponent } from '../dataset-configuration/dataset-configuration.component'
+import { JoinConfigComponent } from '../join-config/join-config.component'
 import type {
   ColumnAction,
   CastType
@@ -110,6 +114,7 @@ export interface ImportWizardData {
     DataSourceSelectorComponent,
     DatasetTitleComponent,
     DatasetConfigurationComponent,
+    JoinConfigComponent,
     TranslatePipe,
     DatasetPreviewTableComponent,
     DatasetPreviewMapComponent,
@@ -122,6 +127,8 @@ export interface ImportWizardData {
   providers: [
     provideIcons({
       iconoirMap,
+      iconoirNavArrowDown,
+      iconoirNavArrowUp,
       iconoirTable,
       iconoirWarningTriangle,
       iconoirXmark
@@ -209,7 +216,14 @@ export class DataImportWizardComponent {
 
   columnConfigs = signal<ColumnConfig[]>([])
   forceProjection = signal<ForceProjection | null>(null)
+  joinConfig = signal<Join | null>(null)
+  joinSectionOpen = signal(false)
   configSaving = signal(false)
+
+  hasJoinColumns = computed(() => (this.joinConfig()?.columns?.length ?? 0) > 0)
+  sourceColumns = computed(() =>
+    this.columnConfigs().map((col) => col.new_name || col.original_name)
+  )
 
   columnNameErrors = signal<Set<string>>(new Set())
   hasColumnNameError = computed(() => this.columnNameErrors().size > 0)
@@ -267,6 +281,7 @@ export class DataImportWizardComponent {
           if (metadata) {
             this.columnConfigs.set(metadata.columns)
             this.forceProjection.set(metadata.force_projection ?? null)
+            this.joinConfig.set(metadata.join ?? null)
           }
           await this.refreshPreview(linkId, false)
         }
@@ -328,6 +343,11 @@ export class DataImportWizardComponent {
       x_column: config.colX || null,
       y_column: config.colY || null
     })
+    this.saveConfigAndRefresh()
+  }
+
+  onJoinChanged(join: Join | null) {
+    this.joinConfig.set(join)
     this.saveConfigAndRefresh()
   }
 
@@ -587,12 +607,14 @@ export class DataImportWizardComponent {
             columns: this.columnConfigs(),
             title: this.metadata()?.title ?? '',
             file_type: this.metadata()?.file_type ?? null,
-            force_projection: this.forceProjection()
+            force_projection: this.forceProjection(),
+            join: this.hasJoinColumns() ? this.joinConfig() : null
           }
         }
       )
       this.metadata.set(updatedMetadata)
       this.columnConfigs.set(updatedMetadata.columns)
+      this.joinConfig.set(updatedMetadata.join ?? null)
     } catch (error) {
       const errorMessage =
         error instanceof HttpErrorResponse

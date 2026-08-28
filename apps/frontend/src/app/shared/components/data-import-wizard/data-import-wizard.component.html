@@ -62,7 +62,34 @@
           (titleChanged)="onTitleChanged($event)"
         />
       </div>
+      <gn-ui-button
+        type="outline"
+        class="p-6"
+        (buttonClick)="joinSectionOpen.set(!joinSectionOpen())"
+      >
+        <span class="flex items-center gap-2">
+          {{ 'import.join.toggle' | translate }}
+          @if (hasJoinColumns()) {
+          <span class="w-2 h-2 rounded-full bg-primary"></span>
+          }
+          <ng-icon
+            [name]="
+              joinSectionOpen() ? 'iconoirNavArrowUp' : 'iconoirNavArrowDown'
+            "
+          ></ng-icon>
+        </span>
+      </gn-ui-button>
     </div>
+
+    @if (joinSectionOpen()) {
+    <div class="px-7 pt-6 border-t border-gray-border">
+      <app-join-config
+        [sourceColumns]="sourceColumns()"
+        [value]="joinConfig()"
+        (joinChanged)="onJoinChanged($event)"
+      />
+    </div>
+    }
   </div>
 
   <!-- Preview section -->
