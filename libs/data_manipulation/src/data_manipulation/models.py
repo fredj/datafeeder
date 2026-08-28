@@ -1,6 +1,7 @@
 """Data transformation models."""
 
 from enum import StrEnum
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -62,6 +63,24 @@ class ColumnConfig(BaseModel):
     )
 
 
+class JoinColumn(BaseModel):
+    """A column added to the output from the joined table."""
+
+    column_name: str = Field(..., description="Name of the column in the joined table")
+
+
+class JoinConfig(BaseModel):
+    """Configuration for joining the source data to another table."""
+
+    table_id: UUID = Field(..., description="IntegrityLink id of the table to join")
+    left_column: str = Field(..., description="Join column on the source data")
+    right_column: str = Field(..., description="Join column on the joined table")
+    columns: list[JoinColumn] = Field(
+        default_factory=list[JoinColumn],
+        description="Columns from the joined table to add to the output",
+    )
+
+
 class IntegrityTransformation(BaseModel):
     """Configuration for data transformation during processing."""
 
@@ -70,4 +89,7 @@ class IntegrityTransformation(BaseModel):
     )
     force_projection: ForceProjection | None = Field(
         default=None, description="Projection configuration for coordinate transformation"
+    )
+    join: JoinConfig | None = Field(
+        default=None, description="Join configuration to add columns from another table"
     )

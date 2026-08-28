@@ -19,6 +19,8 @@ from data_manipulation.database import schema_exists, table_exists
 from data_manipulation.ingestion import read_data_from_postgis
 from data_manipulation.logging import configure_logging
 from data_manipulation.models import ForceProjection as DataManipulationForceProjection
+from data_manipulation.models import JoinColumn as DataManipulationJoinColumn
+from data_manipulation.models import JoinConfig as DataManipulationJoinConfig
 from data_manipulation.utils import sanitize_name
 from data_manipulation.validators import validate_schema_name, validate_table_name
 from fastapi import APIRouter, Body, File, Form, Header, HTTPException, Query, UploadFile
@@ -43,6 +45,7 @@ from src.models.data_import import (
     FileType,
     ForceProjection,
     ImportType,
+    Join,
     StagingMetadata,
     StagingMetadataResponse,
     StagingPreviewResponse,
@@ -936,6 +939,11 @@ def get_staging_metadata(
     columns, force_projection_data = _resolve_columns(
         integrity_link.integrity_transformation, table
     )
+    join_data = (
+        integrity_link.integrity_transformation.get("join")
+        if integrity_link.integrity_transformation
+        else None
+    )
 
     return StagingMetadataResponse(
         title=title,
@@ -946,6 +954,7 @@ def get_staging_metadata(
         force_projection=ForceProjection.model_validate(force_projection_data)
         if force_projection_data
         else None,
+        join=Join.model_validate(join_data) if join_data else None,
         original_projection=original_projection,
         has_final_table=integrity_link.final_table_name is not None,
         layer_name=integrity_link.source_layer
@@ -971,7 +980,7 @@ def edit_staging_metadata(
     with any additional configuration before finalizing the import.
 
     Validates column names (empty or duplicate new_name values are rejected).
-    Persists the full IntegrityTransformation (columns + force_projection) to the DB.
+    Persists the full IntegrityTransformation (columns + force_projection + join) to the DB.
 
     Args:
         data_session: Data database session (injected)
@@ -1024,9 +1033,23 @@ def edit_staging_metadata(
         if config.force_projection
         else None
     )
+    join_cfg = (
+        DataManipulationJoinConfig(
+            table_id=config.join.table_id,
+            left_column=config.join.left_column,
+            right_column=config.join.right_column,
+            columns=[
+                DataManipulationJoinColumn(column_name=col.column_name)
+                for col in config.join.columns
+            ],
+        )
+        if config.join
+        else None
+    )
     transformation = IntegrityTransformation(
         columns=config.columns or None,
         force_projection=force_proj,
+        join=join_cfg,
     )
     integrity_link.integrity_transformation = transformation.model_dump(mode="json")
     flag_modified(integrity_link, "integrity_transformation")

@@ -105,6 +105,21 @@ class ForceProjection(BaseModel):
     x_column: str | None = None
 
 
+class JoinColumn(BaseModel):
+    """A column added to the output from the joined table."""
+
+    column_name: str
+
+
+class Join(BaseModel):
+    """Join configuration for adding columns from another table."""
+
+    table_id: UUID
+    left_column: str
+    right_column: str
+    columns: list[JoinColumn] = []
+
+
 class StagingMetadata(BaseModel):
     """Metadata for staging data"""
 
@@ -113,6 +128,7 @@ class StagingMetadata(BaseModel):
     file_type: FileType | None
     force_projection: ForceProjection | None = None
     original_projection: str | None = None
+    join: Join | None = None
 
 
 class StagingMetadataResponse(StagingMetadata):
